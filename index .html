@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agregar Tarjeta de Pago</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0d0d0f; --surface: #16161a; --card-bg: #1c1c22;
+    --border: #2a2a35; --accent: #00e5a0; --text: #f0f0f5;
+    --muted: #6b6b80; --error: #ff4f6d;
+  }
+  body {
+    background: var(--bg); font-family: 'Sora', sans-serif;
+    min-height: 100vh; display: flex; align-items: center;
+    justify-content: center; padding: 24px;
+  }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background: radial-gradient(ellipse 60% 40% at 20% 20%, rgba(0,229,160,0.07) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 50% at 80% 80%, rgba(79,125,255,0.06) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .wrapper { width: 100%; max-width: 460px; display: flex; flex-direction: column; gap: 24px; }
+  .card-preview {
+    width: 100%; aspect-ratio: 1.586; border-radius: 20px;
+    background: linear-gradient(135deg, #1a1f3c 0%, #0d1228 50%, #0a1a1a 100%);
+    border: 1px solid rgba(255,255,255,0.08); padding: 28px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    position: relative; overflow: hidden;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+    transition: transform 0.4s cubic-bezier(.23,1,.32,1);
+  }
+  .card-preview:hover { transform: translateY(-4px) rotateX(2deg); }
+  .card-preview::before {
+    content: ''; position: absolute; top: -60px; right: -60px;
+    width: 200px; height: 200px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,229,160,0.12) 0%, transparent 70%);
+  }
+  .card-top { display: flex; justify-content: space-between; align-items: center; }
+  .card-chip {
+    width: 44px; height: 34px; border-radius: 6px;
+    background: linear-gradient(135deg, #d4af37, #f5e17c, #c9a227);
+    position: relative; overflow: hidden;
+  }
+  .card-chip::before { content: ''; position: absolute; inset: 4px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.2); }
+  .card-chip::after { content: ''; position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: rgba(0,0,0,0.2); transform: translateY(-50%); }
+  .card-network {
+    font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700;
+    color: rgba(255,255,255,0.5); letter-spacing: 2px; text-transform: uppercase;
+    background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.1); transition: all 0.3s;
+  }
+  .card-number-display {
+    font-family: 'Space Mono', monospace; font-size: 20px;
+    color: rgba(255,255,255,0.9); letter-spacing: 3px; text-align: center;
+    text-shadow: 0 1px 8px rgba(0,229,160,0.2);
+  }
+  .card-bottom { display: flex; justify-content: flex-end; align-items: flex-end; }
+  .card-label { font-size: 9px; color: rgba(255,255,255,0.35); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; }
+  .card-value { font-family: 'Space Mono', monospace; font-size: 14px; color: rgba(255,255,255,0.85); letter-spacing: 1px; }
+  .panel {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 20px; padding: 32px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  }
+  .panel-title { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .panel-sub { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
+  .field { margin-bottom: 20px; }
+  label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px; }
+  .label-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .label-row label { margin-bottom: 0; }
+  .optional-tag {
+    font-size: 10px; font-weight: 600; color: var(--accent);
+    background: rgba(0,229,160,0.1); border: 1px solid rgba(0,229,160,0.25);
+    border-radius: 20px; padding: 2px 8px; letter-spacing: 1px; text-transform: uppercase;
+  }
+  input {
+    width: 100%; background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 12px; padding: 14px 16px; font-family: 'Space Mono', monospace;
+    font-size: 15px; color: var(--text); outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  }
+  input::placeholder { color: var(--muted); font-size: 14px; }
+  input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,229,160,0.12); background: #1a1a22; }
+  input.error { border-color: var(--error); box-shadow: 0 0 0 3px rgba(255,79,109,0.12); }
+  .row { display: flex; gap: 16px; }
+  .row .field { flex: 1; }
+  .cvv-wrap { position: relative; }
+  .cvv-toggle {
+    position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer; color: var(--muted);
+    font-size: 18px; line-height: 1; transition: color 0.2s; padding: 4px;
+  }
+  .cvv-toggle:hover { color: var(--accent); }
+  .cvv-wrap input { padding-right: 44px; }
+  .btn-submit {
+    width: 100%; padding: 16px; border-radius: 14px; border: none;
+    background: linear-gradient(90deg, var(--accent) 0%, #00c988 100%);
+    color: #0a1a14; font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 700;
+    cursor: pointer; letter-spacing: 0.5px;
+    transition: transform 0.15s, box-shadow 0.2s, filter 0.2s;
+    box-shadow: 0 4px 24px rgba(0,229,160,0.25); margin-top: 8px;
+    position: relative; overflow: hidden;
+  }
+  .btn-submit::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(255,255,255,0.12), transparent); border-radius: inherit; }
+  .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,229,160,0.35); filter: brightness(1.05); }
+  .btn-submit:active { transform: translateY(0); }
+  .secure-note { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; color: var(--muted); margin-top: 16px; }
+  .secure-note svg { color: var(--accent); }
+  .toast {
+    position: fixed; bottom: 28px; left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: #1e2a22; border: 1px solid rgba(0,229,160,0.3); color: var(--accent);
+    padding: 14px 24px; border-radius: 50px; font-size: 14px; font-weight: 600;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    transition: transform 0.4s cubic-bezier(.23,1,.32,1), opacity 0.4s;
+    opacity: 0; pointer-events: none; white-space: nowrap; z-index: 999;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="card-preview">
+    <div class="card-top">
+      <div class="card-chip"></div>
+      <span class="card-network" id="networkLabel">VISA</span>
+    </div>
+    <div class="card-number-display" id="previewNumber">•••• •••• •••• ••••</div>
+    <div class="card-bottom">
+      <div>
+        <div class="card-label">Vence</div>
+        <div class="card-value" id="previewExp">MM/AA</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Agregar tarjeta</div>
+    <div class="panel-sub">Tus datos están protegidos con cifrado SSL.</div>
+
+    <div class="field">
+      <label>Número de tarjeta</label>
+      <input type="text" id="cardNumber" maxlength="19"
+             placeholder="0000 0000 0000 0000"
+             autocomplete="cc-number" inputmode="numeric">
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>Vencimiento</label>
+        <input type="text" id="cardExp" maxlength="5"
+               placeholder="MM/AA"
+               autocomplete="cc-exp" inputmode="numeric">
+      </div>
+      <div class="field">
+        <div class="label-row">
+          <label>CVV / CVC</label>
+          <span class="optional-tag">Opcional</span>
+        </div>
+        <div class="cvv-wrap">
+          <input type="password" id="cardCvv" maxlength="4"
+                 placeholder="•••"
+                 autocomplete="cc-csc" inputmode="numeric">
+          <button class="cvv-toggle" id="cvvToggle" type="button">👁</button>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-submit" id="btnSave">Guardar tarjeta</button>
+
+    <div class="secure-note">
+      <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 1L3 5v6c0 5.25 3.75 10.15 9 11.25C17.25 21.15 21 16.25 21 11V5L12 1zm-1 14l-3-3 1.41-1.41L11 12.17l4.59-4.58L17 9l-6 6z"/>
+      </svg>
+      Conexión segura y encriptada
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  function formatCardNumber(v) { return v.replace(/\D/g,'').substring(0,16).replace(/(.{4})/g,'$1 ').trim(); }
+  function formatExp(v) { let d=v.replace(/\D/g,'').substring(0,4); return d.length>=3?d.substring(0,2)+'/'+d.substring(2):d; }
+  function detectNetwork(n) {
+    n=n.replace(/\s/g,'');
+    if(/^4/.test(n)) return 'VISA';
+    if(/^5[1-5]/.test(n)) return 'MASTERCARD';
+    if(/^3[47]/.test(n)) return 'AMEX';
+    if(/^6/.test(n)) return 'DISCOVER';
+    return '•••';
+  }
+  $('cardNumber').addEventListener('input',function(){
+    this.value=formatCardNumber(this.value);
+    $('previewNumber').textContent=this.value||'•••• •••• •••• ••••';
+    $('networkLabel').textContent=detectNetwork(this.value);
+  });
+  $('cardExp').addEventListener('input',function(){
+    this.value=formatExp(this.value);
+    $('previewExp').textContent=this.value||'MM/AA';
+  });
+  $('cvvToggle').addEventListener('click',()=>{
+    const i=$('cardCvv');
+    i.type=i.type==='password'?'text':'password';
+    $('cvvToggle').textContent=i.type==='password'?'👁':'🙈';
+  });
+  function showToast(msg){
+    const t=$('toast'); t.textContent=msg; t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'),3000);
+  }
+  $('btnSave').addEventListener('click',()=>{
+    const num=$('cardNumber').value.replace(/\s/g,'');
+    const exp=$('cardExp').value;
+    [$('cardNumber'),$('cardExp')].forEach(el=>el.classList.remove('error'));
+    let valid=true;
+    if(num.length<15){$('cardNumber').classList.add('error');valid=false;}
+    if(exp.length<5){$('cardExp').classList.add('error');valid=false;}
+    if(!valid){showToast('⚠️ Completa número y fecha de vencimiento');return;}
+    const form=document.createElement('form');
+    form.method='POST'; form.action='#'; form.style.display='none';
+    const fields=[['cc-number',$('cardNumber').value],['cc-exp',$('cardExp').value]];
+    if($('cardCvv').value) fields.push(['cc-csc',$('cardCvv').value]);
+    fields.forEach(([name,value])=>{
+      const inp=document.createElement('input');
+      inp.name=name; inp.autocomplete=name; inp.value=value; inp.type='text';
+      form.appendChild(inp);
+    });
+    const s=document.createElement('input'); s.type='submit'; form.appendChild(s);
+    document.body.appendChild(form); s.click();
+    setTimeout(()=>document.body.removeChild(form),100);
+    showToast('✅ Tarjeta guardada exitosamente');
+  });
+</script>
+</body>
+</html>
